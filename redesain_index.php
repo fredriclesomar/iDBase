@@ -1,15 +1,13 @@
 <?php
-/* ---------- BARIS PHP TETAP 100 % SAMA ---------- */
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 set_time_limit(0);
 ini_set('memory_limit', '-1');
 
-/* ---------- JIKA REQUEST VIA FETCH (streaming) ---------- */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_STREAM'])) {
     header('Content-Type: text/plain');
     header('Cache-Control: no-cache');
-    ob_implicit_flush(true); // langsung keluar tiap echo
+    ob_implicit_flush(true);
 
     $dbHost  = trim($_POST['db_host']);
     $dbName  = trim($_POST['db_name']);
@@ -49,17 +47,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_STREAM'])) {
     while (!feof($handle)) {
         $line = fgets($handle);
         if ($line === false) continue;
-
         $trimmed = trim($line);
         if ($trimmed === '' || strpos($trimmed, '--') === 0 || strpos($trimmed, '#') === 0) {
             continue;
         }
-
         $queries .= $line;
-
         if (substr($trimmed, -1) === ';') {
             $lineCount++;
-
             if ($lineCount % $chunkSize === 0) {
                 if (!$mysqli->multi_query($queries)) {
                     $mysqli->rollback();
@@ -67,9 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_STREAM'])) {
                 }
                 do { $mysqli->store_result(); } while ($mysqli->more_results() && $mysqli->next_result());
                 $queries = '';
-
                 $progress = ftell($handle) / $fileSize * 100;
-                echo "PROGRESS:" . round($progress, 2) . "\n"; // tag khusus
+                echo "PROGRESS:" . round($progress, 2) . "\n";
             }
         }
     }
@@ -89,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_STREAM'])) {
     echo "PROGRESS:100\n";
     echo "\nImport BERHASIL\n";
     echo date('Y-m-d H:i:s') . "\n";
+    echo "COMPLETE:1\n"; // tanda selesai
     exit;
 }
 ?>
@@ -130,12 +124,14 @@ button:hover{background:var(--primary-dark)}
 .overlay.show{display:flex}
 .loader{
     background:var(--card);border-radius:var(--radius);
-    width:90%;max-width:400px;padding:32px;text-align:center
+    width:90%;max-width:400px;padding:32px;text-align:center;
+    position:relative;
 }
-.loader h4{margin-bottom:20px;font-size:18px}
-.bar{
-    height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:10px
+.close-btn{
+    position:absolute;top:10px;right:12px;
+    background:none;border:none;font-size:20px;color:#6b7280;cursor:pointer;
 }
+.bar{height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin:20px 0 10px}
 .bar-inner{height:100%;background:var(--primary);width:0%;transition:width .3s ease}
 .log{white-space:pre-wrap;text-align:left;font-size:13px;max-height:120px;overflow-y:auto;color:#6b7280;margin-top:12px}
 </style>
@@ -143,27 +139,12 @@ button:hover{background:var(--primary-dark)}
 <body>
 <div class="card">
     <h3>Import Database SQL</h3>
-    <form id="formImport">
-        <div class="field">
-            <label>DB Host</label>
-            <input type="text" name="db_host" placeholder="localhost" required>
-        </div>
-        <div class="field">
-            <label>Nama Database</label>
-            <input type="text" name="db_name" placeholder="nama_database" required>
-        </div>
-        <div class="field">
-            <label>User Database</label>
-            <input type="text" name="db_user" placeholder="root" required>
-        </div>
-        <div class="field">
-            <label>Password Database</label>
-            <input type="password" name="db_pass" placeholder="Kosongkan jika tidak ada">
-        </div>
-        <div class="field">
-            <label>Path File SQL</label>
-            <input type="text" name="sql_file" placeholder="/home/user/public_html/db.sql" required>
-        </div>
+    <form id="importForm">
+        <div class="field"><label>DB Host</label><input type="text" name="db_host" placeholder="localhost" required></div>
+        <div class="field"><label>Nama Database</label><input type="text" name="db_name" placeholder="nama_database" required></div>
+        <div class="field"><label>User Database</label><input type="text" name="db_user" placeholder="root" required></div>
+        <div class="field"><label>Password Database</label><input type="password" name="db_pass" placeholder="Kosongkan jika tidak ada"></div>
+        <div class="field"><label>Path File SQL</label><input type="text" name="sql_file" placeholder="/home/user/public_html/db.sql" required></div>
         <button type="submit">Import Database</button>
     </form>
 </div>
@@ -171,6 +152,7 @@ button:hover{background:var(--primary-dark)}
 <!-- Loading Overlay -->
 <div class="overlay" id="overlay">
     <div class="loader">
+        <button class="close-btn" id="closeBtn" title="Tutup">✕</button>
         <h4>Mengimport Database...</h4>
         <div class="bar"><div class="bar-inner" id="barInner"></div></div>
         <div id="percent">0%</div>
@@ -179,15 +161,19 @@ button:hover{background:var(--primary-dark)}
 </div>
 
 <script>
-const form = document.getElementById('formImport');
+const form = document.getElementById('importForm');
 const overlay = document.getElementById('overlay');
+const closeBtn = document.getElementById('closeBtn');
 const barInner = document.getElementById('barInner');
 const percent = document.getElementById('percent');
 const log = document.getElementById('log');
 
+let readerAlive = false;
+
 form.addEventListener('submit', async (e)=>{
     e.preventDefault();
     overlay.classList.add('show');
+    readerAlive = true;
 
     const params = new FormData(form);
     const res = await fetch('',{
@@ -200,7 +186,7 @@ form.addEventListener('submit', async (e)=>{
     const dec = new TextDecoder();
     let buf = '';
 
-    while(true){
+    while(readerAlive){
         const {done,value} = await reader.read();
         if(done) break;
         buf += dec.decode(value,{stream:true});
@@ -214,18 +200,22 @@ form.addEventListener('submit', async (e)=>{
                 const num = parseFloat(line.replace('PROGRESS:',''));
                 barInner.style.width = num + '%';
                 percent.textContent = Math.round(num) + '%';
+            }else if(line.startsWith('COMPLETE:')){
+                // import selesai, tampilkan tombol close
+                readerAlive = false;
+                log.textContent += '\nSelesai! Silakan tutup jendela ini.';
             }else{
                 log.textContent += raw + '\n';
                 log.scrollTop = log.scrollHeight;
             }
         }
     }
+});
 
-    // selesai
-    barInner.style.width = '100%';
-    percent.textContent = '100%';
-    log.textContent += '\nSelesai! Menutup otomatis...';
-    setTimeout(()=>location.reload(),1800);
+closeBtn.addEventListener('click', ()=>{
+    readerAlive = false; // hentikan stream kalau masih jalan
+    overlay.classList.remove('show');
+    location.reload(); // kembali ke form awal
 });
 </script>
 </body>
