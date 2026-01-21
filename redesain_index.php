@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_STREAM'])) {
     echo "PROGRESS:100\n";
     echo "\nImport BERHASIL\n";
     echo date('Y-m-d H:i:s') . "\n";
-    echo "COMPLETE:1\n"; // tanda selesai
+    echo "COMPLETE:1\n"; 
     exit;
 }
 ?>
@@ -149,7 +149,6 @@ button:hover{background:var(--primary-dark)}
     </form>
 </div>
 
-<!-- Loading Overlay -->
 <div class="overlay" id="overlay">
     <div class="loader">
         <button class="close-btn" id="closeBtn" title="Tutup">✕</button>
@@ -192,7 +191,7 @@ form.addEventListener('submit', async (e)=>{
         buf += dec.decode(value,{stream:true});
 
         let lines = buf.split('\n');
-        buf = lines.pop(); // sisa setengah baris
+        buf = lines.pop(); 
 
         for(const raw of lines){
             const line = raw.trim();
@@ -201,7 +200,7 @@ form.addEventListener('submit', async (e)=>{
                 barInner.style.width = num + '%';
                 percent.textContent = Math.round(num) + '%';
             }else if(line.startsWith('COMPLETE:')){
-                // import selesai, tampilkan tombol close
+                
                 readerAlive = false;
                 log.textContent += '\nSelesai! Silakan tutup jendela ini.';
             }else{
@@ -213,9 +212,9 @@ form.addEventListener('submit', async (e)=>{
 });
 
 closeBtn.addEventListener('click', ()=>{
-    readerAlive = false; // hentikan stream kalau masih jalan
+    readerAlive = false; 
     overlay.classList.remove('show');
-    location.reload(); // kembali ke form awal
+    location.reload(); 
 });
 </script>
 </body>
