@@ -30,4 +30,4 @@
 1. Clone repo:
 
 ```bash
-git clone https://github.com/username/iDBase.git
+git clone https://github.com/fredriclesomar/iDBase.git
