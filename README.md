@@ -2,7 +2,7 @@
 
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![PHP Version](https://img.shields.io/badge/PHP-7.4%2B-brightgreen)
-![GitHub Repo Size](https://img.shields.io/github/repo-size/username/iDBase)
+![GitHub Repo Size](https://img.shields.io/github/repo-size/fredriclesomar/iDBase)
 
 **iDBase** adalah tool PHP yang memudahkan **import database SQL dengan cepat dan aman**, cocok untuk file SQL besar, mendukung rollback otomatis, dan monitoring real-time.
 
