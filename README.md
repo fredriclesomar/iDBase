@@ -18,7 +18,7 @@
 
 ---
 
-## 🖼️ Contoh Tampilan iDBase
+## 🖼️ Tampilan iDBase
 
 ![iDBase Screenshot](./gambar/screenhell.png)
 
