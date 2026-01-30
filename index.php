@@ -77,7 +77,7 @@ require 'import.php';
             <div class="stat-card">
                 <i class="fas fa-file-code"></i>
                 <h3>Support</h3>
-                <p>Semua format SQL</p>
+                <p>Semua format SQL(VPS), SQL standard (Shared Hosting) karena terbatas hak user</p>
             </div>
         </div>
 
