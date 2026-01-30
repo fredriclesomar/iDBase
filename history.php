@@ -46,7 +46,7 @@ sort($databases);
 <body>
 <nav class="nav-menu">
     <div class="nav-container">
-        <a href="index.php" class="nav-brand">
+        <a href="index" class="nav-brand">
             <i class="fas fa-database"></i>
             <span>iDBase</span>
         </a>
@@ -81,7 +81,7 @@ sort($databases);
                 <h3>Belum Ada History</h3>
                 <p>Anda belum melakukan import database. Mulai import pertama Anda dari halaman utama.</p>
                 <br>
-                <a href="index.php" class="btn-action btn-primary">
+                <a href="index" class="btn-action btn-primary">
                     <i class="fas fa-plus"></i> Import Baru
                 </a>
             </div>
