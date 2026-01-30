@@ -39,8 +39,10 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 set_time_limit(0);
 ini_set('memory_limit', '-1');
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_STREAM'])) {
+
     header('Content-Type: text/plain');
     header('Cache-Control: no-cache');
     ob_implicit_flush(true);
@@ -53,10 +55,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_STREAM'])) {
 
     $historyBase = [
         'time'     => date('Y-m-d H:i:s'),
-        'db_host' => $fredric_host,
-        'db_name' => $fredric_name,
-        'db_user' => $lesomar_user,
-        'sql_file'=> $fredric_sql,
+        'db_host'  => $fredric_host,
+        'db_name'  => $fredric_name,
+        'db_user'  => $lesomar_user,
+        'sql_file' => $fredric_sql,
     ];
 
     if ($fredric_host === '' || $fredric_name === '' || $lesomar_user === '' || $fredric_sql === '') {
@@ -73,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_STREAM'])) {
             'status'  => 'failed',
             'message' => 'File SQL tidak ditemukan'
         ]);
-        echo "ERROR: File SQL tidak ditemukan: $fredric_sql\n";
+        echo "ERROR: File SQL tidak ditemukan\n";
         exit;
     }
 
@@ -89,102 +91,120 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_STREAM'])) {
     echo "Start import database...\n";
     echo date('Y-m-d H:i:s') . "\n\n";
 
-    $lesomar_file_size = filesize($fredric_sql);
-    $lesomar_handle = fopen($fredric_sql, 'r');
-    if (!$lesomar_handle) {
-        saveImportHistory($historyBase + [
-            'status'  => 'failed',
-            'message' => 'Gagal membuka file SQL'
-        ]);
-        echo "ERROR: Gagal membuka file SQL\n";
-        exit;
-    }
+    try {
 
-    $fredric_mysqli = new mysqli($fredric_host, $lesomar_user, $lesomar_pass, $fredric_name);
-    if ($fredric_mysqli->connect_error) {
-        saveImportHistory($historyBase + [
-            'status'  => 'failed',
-            'message' => $fredric_mysqli->connect_error
-        ]);
-        echo "Koneksi gagal: " . $fredric_mysqli->connect_error . "\n";
-        exit;
-    }
-
-    $fredric_mysqli->autocommit(false);
-    $lesomar_line_count  = 0;
-    $fredric_chunk_size = 5000;
-    $lesomar_queries    = '';
-
-    while (!feof($lesomar_handle)) {
-        $lesomar_line = fgets($lesomar_handle);
-        if ($lesomar_line === false) continue;
-
-        $fredric_trimmed = trim($lesomar_line);
-        if ($fredric_trimmed === '' ||
-            strpos($fredric_trimmed, '--') === 0 ||
-            strpos($fredric_trimmed, '#') === 0) {
-            continue;
+        $lesomar_file_size = filesize($fredric_sql);
+        $lesomar_handle = fopen($fredric_sql, 'r');
+        if (!$lesomar_handle) {
+            throw new Exception('Gagal membuka file SQL');
         }
 
-        $lesomar_queries .= $lesomar_line;
+        $fredric_mysqli = new mysqli(
+            $fredric_host,
+            $lesomar_user,
+            $lesomar_pass,
+            $fredric_name
+        );
 
-        if (substr($fredric_trimmed, -1) === ';') {
-            $lesomar_line_count++;
+        $fredric_mysqli->autocommit(false);
 
-            if ($lesomar_line_count % $fredric_chunk_size === 0) {
-                if (!$fredric_mysqli->multi_query($lesomar_queries)) {
-                    $fredric_mysqli->rollback();
+        $lesomar_line_count  = 0;
+        $fredric_chunk_size = 5000;
+        $lesomar_queries    = '';
 
-                    saveImportHistory($historyBase + [
-                        'status'  => 'failed',
-                        'message' => $fredric_mysqli->error
-                    ]);
+        while (!feof($lesomar_handle)) {
 
-                    echo "\nMYSQL ERROR: " . $fredric_mysqli->error . "\n";
-                    exit;
+            $lesomar_line = fgets($lesomar_handle);
+            if ($lesomar_line === false) continue;
+
+            $fredric_trimmed = trim($lesomar_line);
+            if (
+                $fredric_trimmed === '' ||
+                strpos($fredric_trimmed, '--') === 0 ||
+                strpos($fredric_trimmed, '#') === 0
+            ) {
+                continue;
+            }
+
+            $lesomar_queries .= $lesomar_line;
+
+            if (substr($fredric_trimmed, -1) === ';') {
+                $lesomar_line_count++;
+
+                if ($lesomar_line_count % $fredric_chunk_size === 0) {
+
+                    $fredric_mysqli->multi_query($lesomar_queries);
+
+                    do {
+                        if ($result = $fredric_mysqli->store_result()) {
+                            $result->free();
+                        }
+                    } while ($fredric_mysqli->more_results() && $fredric_mysqli->next_result());
+
+                    $lesomar_queries = '';
+
+                    $fredric_progress = (ftell($lesomar_handle) / $lesomar_file_size) * 100;
+                    echo "PROGRESS:" . round($fredric_progress, 2) . "\n";
                 }
-
-                do {
-                    $fredric_mysqli->store_result();
-                } while ($fredric_mysqli->more_results() && $fredric_mysqli->next_result());
-
-                $lesomar_queries = '';
-                $fredric_progress = ftell($lesomar_handle) / $lesomar_file_size * 100;
-                echo "PROGRESS:" . round($fredric_progress, 2) . "\n";
             }
         }
-    }
 
-    if (trim($lesomar_queries) !== '') {
-        if (!$fredric_mysqli->multi_query($lesomar_queries)) {
-            $fredric_mysqli->rollback();
+        if (trim($lesomar_queries) !== '') {
+            $fredric_mysqli->multi_query($lesomar_queries);
 
-            saveImportHistory($historyBase + [
-                'status'  => 'failed',
-                'message' => $fredric_mysqli->error
-            ]);
-
-            echo "\nMYSQL ERROR: " . $fredric_mysqli->error . "\n";
-            exit;
+            do {
+                if ($result = $fredric_mysqli->store_result()) {
+                    $result->free();
+                }
+            } while ($fredric_mysqli->more_results() && $fredric_mysqli->next_result());
         }
 
-        do {
-            $fredric_mysqli->store_result();
-        } while ($fredric_mysqli->more_results() && $fredric_mysqli->next_result());
+        $fredric_mysqli->commit();
+        fclose($lesomar_handle);
+        $fredric_mysqli->close();
+
+        saveImportHistory($historyBase + [
+            'status'  => 'success',
+            'message' => 'Import database berhasil'
+        ]);
+
+        echo "PROGRESS:100\n";
+        echo "Import BERHASIL\n";
+        echo date('Y-m-d H:i:s') . "\n";
+        echo "COMPLETE:1\n";
+        exit;
+
+    } catch (mysqli_sql_exception $e) {
+
+        if (isset($fredric_mysqli)) {
+            $fredric_mysqli->rollback();
+        }
+
+        $code = $e->getCode();
+        $msg  = $e->getMessage();
+
+        if (stripos($msg, 'already exists') !== false) {
+            $msg = 'Tabel sudah ada';
+        }
+
+        saveImportHistory($historyBase + [
+            'status'  => 'failed',
+            'message' => "SQL $code: $msg"
+        ]);
+
+        echo "ERROR (SQL $code): $msg\n";
+        echo "Import dibatalkan & rollback dilakukan\n";
+        exit;
+
+    } catch (Exception $e) {
+
+        saveImportHistory($historyBase + [
+            'status'  => 'failed',
+            'message' => $e->getMessage()
+        ]);
+
+        echo "ERROR: " . $e->getMessage() . "\n";
+        exit;
     }
-
-    $fredric_mysqli->commit();
-    $fredric_mysqli->close();
-    fclose($lesomar_handle);
-
-    saveImportHistory($historyBase + [
-        'status'  => 'success',
-        'message' => 'Import database berhasil'
-    ]);
-
-    echo "PROGRESS:100\n";
-    echo "\nImport BERHASIL\n";
-    echo date('Y-m-d H:i:s') . "\n";
-    echo "COMPLETE:1\n";
-    exit;
 }
+
