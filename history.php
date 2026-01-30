@@ -13,6 +13,8 @@
  * See LICENSE file for details.
  */
 
+require_once __DIR__ . '/global/config.php';
+
 $file = __DIR__ . '/data/import_history.json';
 $history = [];
 

@@ -14,6 +14,8 @@
  */
 
 require 'import.php';
+require_once __DIR__ . '/global/config.php';
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -28,9 +30,37 @@ require 'import.php';
 </head>
 
 <body>
+    <?php
+require_once __DIR__ . '/update_check.php';
+$update = checkForUpdate();
+?>
+
+<?php if ($update): ?>
+<div style="
+    background:#fff3cd;
+    border:1px solid #ffeeba;
+    color:#856404;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:20px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+">
+    <i class="fas fa-bell"></i>
+    <div style="flex:1">
+        <strong>Update tersedia!</strong><br>
+        <?= htmlspecialchars($update['message']) ?>
+    </div>
+    <a href="<?= htmlspecialchars($update['url']) ?>" target="_blank"
+       style="background:#f59e0b;color:white;padding:8px 14px;border-radius:8px;text-decoration:none;">
+        Download
+    </a>
+</div>
+<?php endif; ?>
 <nav class="nav-menu">
     <div class="nav-container">
-        <a href="index.php" class="nav-brand">
+        <a href="index" class="nav-brand">
             <i class="fas fa-database"></i>
             <span>iDBase</span>
         </a>
