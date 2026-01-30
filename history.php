@@ -137,7 +137,7 @@ sort($databases);
                     <select class="filter-select" id="statusFilter">
                         <option value="">Semua Status</option>
                         <option value="success">Berhasil</option>
-                        <option value="error">Gagal</option>
+                        <option value="failed">Gagal</option>
                     </select>
                     
                     <select class="filter-select" id="dbFilter">
