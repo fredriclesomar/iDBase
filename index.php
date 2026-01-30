@@ -23,11 +23,33 @@ require 'import.php';
 <link rel="icon" type="image/x-icon" href="./gambar/database.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css ">
 <link rel="stylesheet" href="assets/css/style.css">
 </head>
 
 <body>
+<nav class="nav-menu">
+    <div class="nav-container">
+        <a href="index.php" class="nav-brand">
+            <i class="fas fa-database"></i>
+            <span>iDBase</span>
+        </a>
+        <ul class="nav-links">
+            <li>
+                <a href="index" class="active">
+                    <i class="fas fa-home"></i>
+                    <span>Import</span>
+                </a>
+            </li>
+            <li>
+                <a href="history">
+                    <i class="fas fa-history"></i>
+                    <span>History</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
 
 <div class="container">
     <div class="card">
@@ -159,9 +181,6 @@ require 'import.php';
         <div class="log-container">
             <div class="log-header">
                 <h5><i class="fas fa-list"></i> Log Proses</h5>
-                <!--<button class="close-btn" onclick="closeOverlay()" title="Tutup">
-                    <i class="fas fa-times"></i>
-                </button>-->
             </div>
             <div class="log-content" id="log"></div>
         </div>
