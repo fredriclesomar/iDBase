@@ -194,6 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_STREAM'])) {
 
         echo "ERROR (SQL $code): $msg\n";
         echo "Import dibatalkan & rollback dilakukan\n";
+        echo "Silahkan reload/refresh web\n";
         exit;
 
     } catch (Exception $e) {
